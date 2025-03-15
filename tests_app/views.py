@@ -10,6 +10,7 @@ from .forms import (
     SubjectForm, TestForm, QuestionForm, ChoiceForm, 
     TextAnswerForm, SingleChoiceAnswerForm, MultipleChoiceAnswerForm, BaseAnswerFormSet
 )
+from django.db import models
 
 def home_view(request):
     subjects = Subject.objects.all()
@@ -137,8 +138,9 @@ def question_create(request, test_id):
     if not request.user.profile.is_teacher or test.created_by != request.user:
         return HttpResponseForbidden("У вас нет прав для добавления вопросов к этому тесту")
     
-    # Определяем порядок нового вопроса
-    order = test.questions.count() + 1
+    # Определяем порядок нового вопроса (максимальный + 1)
+    max_order = test.questions.aggregate(models.Max('order'))['order__max'] or 0
+    order = max_order + 1
     
     if request.method == 'POST':
         question_form = QuestionForm(request.POST)
@@ -146,8 +148,20 @@ def question_create(request, test_id):
         if question_form.is_valid():
             question = question_form.save(commit=False)
             question.test = test
-            question.order = order
-            question.save()
+            
+            # Получаем порядковый номер из формы
+            new_order = question.order
+            
+            # Обрабатываем возможные конфликты порядковых номеров
+            with transaction.atomic():
+                # Если такой порядок уже существует, сдвигаем все вопросы с порядком >= new_order
+                if test.questions.filter(order=new_order).exists():
+                    # Сдвигаем все вопросы с порядком >= new_order на 1 вверх
+                    test.questions.filter(order__gte=new_order).update(order=models.F('order') + 1)
+                    messages.info(request, f'Порядковый номер {new_order} уже существует. Другие вопросы были автоматически перенумерованы.')
+                
+                # Сохраняем вопрос с указанным порядком
+                question.save()
             
             # Если тип вопроса предполагает варианты ответов, перенаправляем на страницу добавления вариантов
             if question.question_type in ['single', 'multiple']:
@@ -172,10 +186,41 @@ def question_update(request, pk):
     if not request.user.profile.is_teacher or test.created_by != request.user:
         return HttpResponseForbidden("У вас нет прав для редактирования этого вопроса")
     
+    old_order = question.order
+    
     if request.method == 'POST':
         form = QuestionForm(request.POST, instance=question)
         if form.is_valid():
-            form.save()
+            # Получаем новый порядок, но пока не сохраняем вопрос
+            new_question = form.save(commit=False)
+            new_order = new_question.order
+            
+            # Если порядок изменился
+            if old_order != new_order:
+                with transaction.atomic():
+                    # Временно устанавливаем порядок в отрицательное значение,
+                    # чтобы избежать конфликтов при перестановке
+                    question.order = -1
+                    question.save(update_fields=['order'])
+                    
+                    # Проверяем, существует ли уже вопрос с таким порядком
+                    if test.questions.filter(order=new_order).exists():
+                        # Если новый порядок больше старого, сдвигаем вопросы между старым и новым порядком (включительно)
+                        if new_order > old_order:
+                            test.questions.filter(order__gt=old_order, order__lte=new_order).update(order=models.F('order') - 1)
+                        # Если новый порядок меньше старого, сдвигаем вопросы между новым и старым порядком (включительно)
+                        else:
+                            test.questions.filter(order__gte=new_order, order__lt=old_order).update(order=models.F('order') + 1)
+                        
+                        messages.info(request, f'Порядковый номер {new_order} уже существует. Другие вопросы были автоматически перенумерованы.')
+                    
+                    # Устанавливаем новый порядок и сохраняем вопрос
+                    new_question.order = new_order
+                    new_question.save()
+            else:
+                # Если порядок не изменился, просто сохраняем вопрос
+                new_question.save()
+            
             messages.success(request, 'Вопрос успешно обновлен!')
             return redirect('test_detail', pk=test.pk)
     else:
@@ -383,6 +428,12 @@ def complete_test(request, attempt_id):
     attempt.completed_at = timezone.now()
     attempt.score = total_score
     attempt.save()
+    
+    # Проверяем, истекло ли время
+    if request.method == 'POST' and request.POST.get('time_expired') == 'True':
+        messages.warning(request, 'Время на прохождение теста истекло!')
+    else:
+        messages.success(request, 'Тест успешно завершен!')
     
     return redirect('test_results', attempt_id=attempt.pk)
 

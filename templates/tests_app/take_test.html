@@ -93,28 +93,51 @@
         progressBar.style.width = progressValue + '%';
         
         // Таймер
-        let remainingSeconds = {{ remaining_seconds|floatformat:0 }};
+        const remainingSeconds = parseInt("{{ remaining_seconds|floatformat:0 }}");
         const timerElement = document.getElementById('time-remaining');
+        const attemptId = parseInt("{{ attempt.id }}");
+        let timeLeft = remainingSeconds;
         
         function updateTimer() {
-            const minutes = Math.floor(remainingSeconds / 60);
-            const seconds = remainingSeconds % 60;
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
             
-            timerElement.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+            timerElement.textContent = minutes + ":" + (seconds < 10 ? '0' : '') + seconds;
             
-            if (remainingSeconds <= 300 && remainingSeconds > 60) {
+            if (timeLeft <= 300 && timeLeft > 60) {
                 document.getElementById('timer').classList.add('timer-warning');
-            } else if (remainingSeconds <= 60) {
+            } else if (timeLeft <= 60) {
                 document.getElementById('timer').classList.remove('timer-warning');
                 document.getElementById('timer').classList.add('timer-danger');
             }
             
-            if (remainingSeconds <= 0) {
+            if (timeLeft <= 0) {
                 clearInterval(timerInterval);
-                // Автоматически отправляем форму при истечении времени
-                document.querySelector('form').submit();
+                // Создаем форму для отправки POST-запроса на завершение теста
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = "/attempts/" + attemptId + "/complete/";
+                
+                // Добавляем CSRF-токен
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = 'csrfmiddlewaretoken';
+                csrfInput.value = csrfToken;
+                form.appendChild(csrfInput);
+                
+                // Добавляем параметр, указывающий, что время истекло
+                const timeExpiredInput = document.createElement('input');
+                timeExpiredInput.type = 'hidden';
+                timeExpiredInput.name = 'time_expired';
+                timeExpiredInput.value = 'True';
+                form.appendChild(timeExpiredInput);
+                
+                // Добавляем форму в DOM и отправляем
+                document.body.appendChild(form);
+                form.submit();
             } else {
-                remainingSeconds--;
+                timeLeft--;
             }
         }
         
