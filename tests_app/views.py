@@ -280,6 +280,18 @@ def take_test(request, attempt_id):
                 answer = form.save(commit=False)
                 answer.attempt = attempt
                 answer.question = current_question
+                
+                # Автоматически оцениваем текстовый ответ, если есть правильный ответ
+                if current_question.correct_text_answer:
+                    # Сравниваем ответы без учета регистра
+                    student_answer = answer.text_answer.strip().lower() if answer.text_answer else ""
+                    correct_answer = current_question.correct_text_answer.strip().lower()
+                    
+                    if student_answer == correct_answer:
+                        answer.score = current_question.points
+                    else:
+                        answer.score = 0
+                
                 answer.save()
                 return redirect('take_test', attempt_id=attempt.pk)
         
@@ -422,3 +434,25 @@ def teacher_results(request):
         'selected_test_id': int(test_id) if test_id else None,
     }
     return render(request, 'tests_app/teacher_results.html', context)
+
+@login_required
+def test_delete(request, pk):
+    test = get_object_or_404(Test, pk=pk)
+    
+    # Проверяем, что пользователь имеет право удалить тест
+    if not request.user.profile.is_teacher or test.created_by != request.user:
+        return HttpResponseForbidden("У вас нет прав для удаления этого теста")
+    
+    if request.method == 'POST':
+        # Сохраняем название теста для сообщения
+        test_title = test.title
+        # Удаляем тест
+        test.delete()
+        messages.success(request, f'Тест "{test_title}" успешно удален!')
+        return redirect('test_list')
+    
+    # Если метод GET, показываем страницу подтверждения
+    context = {
+        'test': test,
+    }
+    return render(request, 'tests_app/test_confirm_delete.html', context)

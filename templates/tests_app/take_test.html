@@ -39,8 +39,8 @@
             </div>
             <div class="card-body">
                 <div class="mb-3">
-                    <div class="progress">
-                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ progress }}%" aria-valuenow="{{ progress }}" aria-valuemin="0" aria-valuemax="100"></div>
+                    <div class="progress" style="height: 15px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" data-progress="{{ progress }}" style="width: 0%" aria-valuenow="{{ progress }}" aria-valuemin="0" aria-valuemax="100"></div>
                     </div>
                     <div class="d-flex justify-content-between mt-1">
                         <small class="text-muted">Прогресс: {{ progress|floatformat:0 }}%</small>
@@ -87,6 +87,12 @@
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Установка ширины прогресс-бара
+        const progressBar = document.querySelector('.progress-bar');
+        const progressValue = progressBar.getAttribute('data-progress');
+        progressBar.style.width = progressValue + '%';
+        
+        // Таймер
         let remainingSeconds = {{ remaining_seconds|floatformat:0 }};
         const timerElement = document.getElementById('time-remaining');
         

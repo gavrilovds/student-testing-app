@@ -14,6 +14,7 @@ urlpatterns = [
     path('tests/<int:pk>/', views.test_detail, name='test_detail'),
     path('tests/create/', views.test_create, name='test_create'),
     path('tests/<int:pk>/update/', views.test_update, name='test_update'),
+    path('tests/<int:pk>/delete/', views.test_delete, name='test_delete'),
     
     # Маршруты для вопросов и вариантов ответов
     path('tests/<int:test_id>/questions/create/', views.question_create, name='question_create'),

@@ -53,10 +53,11 @@
                                 <td>{{ attempt.completed_at|date:"d.m.Y H:i" }}</td>
                                 <td>
                                     <div class="d-flex align-items-center">
-                                        <div class="progress flex-grow-1 me-2" style="height: 10px;">
-                                            <div class="progress-bar bg-{% if attempt.score_percentage >= 80 %}success{% elif attempt.score_percentage >= 60 %}info{% elif attempt.score_percentage >= 40 %}warning{% else %}danger{% endif %}" 
+                                        <div class="progress flex-grow-1 me-2" style="height: 15px;">
+                                            <div class="progress-bar progress-bar-striped bg-{% if attempt.score_percentage >= 80 %}success{% elif attempt.score_percentage >= 60 %}info{% elif attempt.score_percentage >= 40 %}warning{% else %}danger{% endif %}" 
                                                 role="progressbar" 
-                                                style="width: {{ attempt.score_percentage }}%;" 
+                                                data-progress="{{ attempt.score_percentage }}"
+                                                style="width: 0%;" 
                                                 aria-valuenow="{{ attempt.score_percentage }}" 
                                                 aria-valuemin="0" 
                                                 aria-valuemax="100">
@@ -85,4 +86,16 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Установка ширины прогресс-баров
+        document.querySelectorAll('.progress-bar').forEach(function(progressBar) {
+            const progressValue = progressBar.getAttribute('data-progress');
+            progressBar.style.width = progressValue + '%';
+        });
+    });
+</script>
 {% endblock %} 
