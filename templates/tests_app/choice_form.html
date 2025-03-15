@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Варианты ответов | Система онлайн тестирования{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-list-ul me-2"></i>Варианты ответов</h4>
+            </div>
+            <div class="card-body">
+                <div class="mb-4">
+                    <h5>Тест: {{ test.title }}</h5>
+                    <div class="alert alert-info">
+                        <h6 class="mb-1">Вопрос:</h6>
+                        <p class="mb-1">{{ question.text }}</p>
+                        <span class="badge bg-{% if question.question_type == 'single' %}success{% else %}warning{% endif %}">
+                            {{ question.get_question_type_display }}
+                        </span>
+                    </div>
+                </div>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    {{ formset.management_form }}
+                    
+                    {% if question.question_type == 'single' %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Внимание!</strong> Для вопроса с единственным выбором отметьте только один правильный ответ.
+                    </div>
+                    {% endif %}
+                    
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Текст варианта</th>
+                                <th>Правильный ответ</th>
+                                <th>Удалить</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for form in formset %}
+                            <tr>
+                                <td>
+                                    {{ form.id }}
+                                    {{ form.text|as_crispy_field }}
+                                </td>
+                                <td>{{ form.is_correct|as_crispy_field }}</td>
+                                <td>
+                                    {% if formset.can_delete %}
+                                    {{ form.DELETE|as_crispy_field }}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{% url 'test_detail' test.pk %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Назад к тесту
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Сохранить варианты ответов
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

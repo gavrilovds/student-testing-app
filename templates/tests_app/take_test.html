@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Прохождение теста | Система онлайн тестирования{% endblock %}
+
+{% block extra_css %}
+<style>
+    .progress {
+        height: 10px;
+    }
+    #timer {
+        font-size: 1.5rem;
+        font-weight: bold;
+    }
+    .timer-warning {
+        color: #fd7e14;
+    }
+    .timer-danger {
+        color: #dc3545;
+        animation: blink 1s linear infinite;
+    }
+    @keyframes blink {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0"><i class="fas fa-clipboard-list me-2"></i>{{ test.title }}</h4>
+                <div id="timer" class="text-white">
+                    <i class="fas fa-clock me-2"></i><span id="time-remaining">{{ remaining_seconds|floatformat:0 }}</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="progress">
+                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ progress }}%" aria-valuenow="{{ progress }}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    <div class="d-flex justify-content-between mt-1">
+                        <small class="text-muted">Прогресс: {{ progress|floatformat:0 }}%</small>
+                        <small class="text-muted">Вопрос {{ current_question.order }} из {{ test.questions.count }}</small>
+                    </div>
+                </div>
+                
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">
+                            <span class="badge bg-primary me-2">{{ current_question.order }}</span>
+                            {{ current_question.text }}
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="post">
+                            {% csrf_token %}
+                            
+                            {% if current_question.question_type == 'text' %}
+                            {{ form|crispy }}
+                            {% else %}
+                            {{ form }}
+                            {% endif %}
+                            
+                            <div class="d-grid gap-2 mt-4">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-check-circle me-2"></i>Ответить и продолжить
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Внимание!</strong> Не закрывайте страницу и не обновляйте ее. Это может привести к потере ответов.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        let remainingSeconds = {{ remaining_seconds|floatformat:0 }};
+        const timerElement = document.getElementById('time-remaining');
+        
+        function updateTimer() {
+            const minutes = Math.floor(remainingSeconds / 60);
+            const seconds = remainingSeconds % 60;
+            
+            timerElement.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+            
+            if (remainingSeconds <= 300 && remainingSeconds > 60) {
+                document.getElementById('timer').classList.add('timer-warning');
+            } else if (remainingSeconds <= 60) {
+                document.getElementById('timer').classList.remove('timer-warning');
+                document.getElementById('timer').classList.add('timer-danger');
+            }
+            
+            if (remainingSeconds <= 0) {
+                clearInterval(timerInterval);
+                // Автоматически отправляем форму при истечении времени
+                document.querySelector('form').submit();
+            } else {
+                remainingSeconds--;
+            }
+        }
+        
+        updateTimer();
+        const timerInterval = setInterval(updateTimer, 1000);
+    });
+</script>
+{% endblock %} 

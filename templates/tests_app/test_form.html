@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}
+    {% if test %}Редактирование теста{% else %}Создание теста{% endif %} | Система онлайн тестирования
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    {% if test %}
+                    <i class="fas fa-edit me-2"></i>Редактирование теста
+                    {% else %}
+                    <i class="fas fa-plus-circle me-2"></i>Создание нового теста
+                    {% endif %}
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    {{ form|crispy }}
+                    
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{% url 'test_list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Назад
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>
+                            {% if test %}Сохранить изменения{% else %}Создать тест{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        {% if test %}
+        <div class="card shadow mt-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-question-circle me-2"></i>Вопросы теста</h5>
+            </div>
+            <div class="card-body">
+                {% if test.questions.all %}
+                <div class="list-group mb-3">
+                    {% for question in test.questions.all|dictsort:"order" %}
+                    <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="badge bg-primary me-2">{{ question.order }}</span>
+                            {{ question.text|truncatechars:100 }}
+                            <span class="badge bg-{% if question.question_type == 'text' %}info{% elif question.question_type == 'single' %}success{% else %}warning{% endif %} ms-2">
+                                {{ question.get_question_type_display }}
+                            </span>
+                        </div>
+                        <div>
+                            <a href="{% url 'question_update' question.pk %}" class="btn btn-sm btn-outline-primary me-1">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            {% if question.question_type != 'text' %}
+                            <a href="{% url 'choice_create' question.pk %}" class="btn btn-sm btn-outline-info">
+                                <i class="fas fa-list-ul"></i>
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted">У этого теста пока нет вопросов.</p>
+                {% endif %}
+                
+                <div class="d-grid">
+                    <a href="{% url 'question_create' test.id %}" class="btn btn-success">
+                        <i class="fas fa-plus-circle me-2"></i>Добавить вопрос
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

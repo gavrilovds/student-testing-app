@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ test.title }} | Система онлайн тестирования{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow mb-4">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0"><i class="fas fa-clipboard-list me-2"></i>{{ test.title }}</h4>
+                <a href="{% url 'test_update' test.pk %}" class="btn btn-light btn-sm">
+                    <i class="fas fa-edit me-1"></i>Редактировать
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <h5 class="text-muted">Дисциплина: {{ test.subject.name }}</h5>
+                    <p>{{ test.description }}</p>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h3 class="mb-0">{{ test.time_limit }}</h3>
+                                <p class="text-muted mb-0">минут</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h3 class="mb-0">{{ questions.count }}</h3>
+                                <p class="text-muted mb-0">вопросов</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h3 class="mb-0">{{ test.attempts.count }}</h3>
+                                <p class="text-muted mb-0">попыток</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="testActive" {% if test.is_active %}checked{% endif %} disabled>
+                    <label class="form-check-label" for="testActive">
+                        Тест {% if test.is_active %}активен{% else %}неактивен{% endif %}
+                    </label>
+                </div>
+                
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'test_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Назад к списку
+                    </a>
+                    <a href="{% url 'teacher_results' %}?test_id={{ test.id }}" class="btn btn-info">
+                        <i class="fas fa-chart-bar me-2"></i>Результаты
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card shadow">
+            <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-question-circle me-2"></i>Вопросы теста</h5>
+                <a href="{% url 'question_create' test.id %}" class="btn btn-light btn-sm">
+                    <i class="fas fa-plus me-1"></i>Добавить вопрос
+                </a>
+            </div>
+            <div class="card-body">
+                {% if questions %}
+                <div class="list-group">
+                    {% for question in questions %}
+                    <div class="list-group-item list-group-item-action">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h5 class="mb-0">
+                                <span class="badge bg-primary me-2">{{ question.order }}</span>
+                                {{ question.text|truncatechars:100 }}
+                            </h5>
+                            <div>
+                                <span class="badge bg-{% if question.question_type == 'text' %}info{% elif question.question_type == 'single' %}success{% else %}warning{% endif %}">
+                                    {{ question.get_question_type_display }}
+                                </span>
+                                <span class="badge bg-secondary ms-1">{{ question.points }} балл(ов)</span>
+                            </div>
+                        </div>
+                        
+                        {% if question.question_type != 'text' and question.choices.all %}
+                        <div class="ms-4 mt-2">
+                            <p class="mb-1"><strong>Варианты ответов:</strong></p>
+                            <ul class="list-group">
+                                {% for choice in question.choices.all %}
+                                <li class="list-group-item {% if choice.is_correct %}list-group-item-success{% endif %}">
+                                    {{ choice.text }}
+                                    {% if choice.is_correct %}<i class="fas fa-check text-success ms-2"></i>{% endif %}
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+                        
+                        {% if question.question_type == 'text' and question.correct_text_answer %}
+                        <div class="ms-4 mt-2">
+                            <p class="mb-1"><strong>Правильный ответ:</strong></p>
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    {{ question.correct_text_answer }}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="d-flex justify-content-end mt-2">
+                            <a href="{% url 'question_update' question.pk %}" class="btn btn-sm btn-outline-primary me-1">
+                                <i class="fas fa-edit me-1"></i>Редактировать
+                            </a>
+                            {% if question.question_type != 'text' %}
+                            <a href="{% url 'choice_create' question.pk %}" class="btn btn-sm btn-outline-info">
+                                <i class="fas fa-list-ul me-1"></i>Варианты ответов
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>У этого теста пока нет вопросов. Добавьте вопросы, чтобы студенты могли проходить тест.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card shadow mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Информация</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>Создан:</span>
+                        <span>{{ test.created_at|date:"d.m.Y H:i" }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>Автор:</span>
+                        <span>{{ test.created_by.get_full_name|default:test.created_by.username }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>Статус:</span>
+                        <span class="badge bg-{% if test.is_active %}success{% else %}danger{% endif %}">
+                            {% if test.is_active %}Активен{% else %}Неактивен{% endif %}
+                        </span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="card shadow">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Статистика</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6 mb-3">
+                        <h3>{{ test.attempts.count }}</h3>
+                        <p class="text-muted">Всего попыток</p>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <h3>{% with completed_attempts=test.attempts.all|dictsort:"completed_at" %}{{ completed_attempts|length }}{% endwith %}</h3>
+                        <p class="text-muted">Завершенных</p>
+                    </div>
+                </div>
+                
+                <a href="{% url 'teacher_results' %}?test_id={{ test.id }}" class="btn btn-outline-primary d-block">
+                    <i class="fas fa-chart-bar me-2"></i>Подробная статистика
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,147 @@
+{% extends 'base.html' %}
+
+{% block title %}Результаты теста | Система онлайн тестирования{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card shadow mb-4">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-clipboard-check me-2"></i>Результаты теста: {{ test.title }}</h4>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h5>Информация о тесте</h5>
+                        <ul class="list-group">
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>Дисциплина:</span>
+                                <span>{{ test.subject.name }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>Преподаватель:</span>
+                                <span>{{ test.created_by.get_full_name|default:test.created_by.username }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>Количество вопросов:</span>
+                                <span>{{ test.questions.count }}</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>Информация о попытке</h5>
+                        <ul class="list-group">
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>Студент:</span>
+                                <span>{{ attempt.student.get_full_name|default:attempt.student.username }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>Начало:</span>
+                                <span>{{ attempt.started_at|date:"d.m.Y H:i" }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>Завершение:</span>
+                                <span>{{ attempt.completed_at|date:"d.m.Y H:i" }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>Затраченное время:</span>
+                                <span>
+                                    {% with time_spent=attempt.completed_at|timeuntil:attempt.started_at %}
+                                    {{ time_spent }}
+                                    {% endwith %}
+                                </span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="text-center mb-4">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h2 class="mb-0">{{ attempt.score_percentage|floatformat:1 }}%</h2>
+                            <p class="text-muted mb-0">{{ attempt.score|floatformat:1 }} из {{ attempt.max_score|floatformat:1 }} баллов</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <h5 class="mb-3">Детали ответов</h5>
+                
+                {% for answer in answers %}
+                <div class="card mb-3 {% if answer.score == answer.question.points %}border-success{% elif answer.score > 0 %}border-warning{% else %}border-danger{% endif %}">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <span class="badge bg-primary me-2">{{ answer.question.order }}</span>
+                            {{ answer.question.text }}
+                        </h5>
+                        <div>
+                            <span class="badge bg-{% if answer.score == answer.question.points %}success{% elif answer.score > 0 %}warning{% else %}danger{% endif %}">
+                                {{ answer.score|floatformat:1 }}/{{ answer.question.points }} баллов
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        {% if answer.question.question_type == 'text' %}
+                        <div class="mb-3">
+                            <h6>Ваш ответ:</h6>
+                            <p class="mb-0">{{ answer.text_answer|default:"Нет ответа" }}</p>
+                        </div>
+                        
+                        {% if answer.question.correct_text_answer %}
+                        <div class="mb-3">
+                            <h6>Правильный ответ:</h6>
+                            <p class="mb-0">{{ answer.question.correct_text_answer }}</p>
+                        </div>
+                        {% endif %}
+                        
+                        {% else %}
+                        <div class="mb-3">
+                            <h6>Ваш выбор:</h6>
+                            <ul class="list-group">
+                                {% for selected in answer.selected_choices.all %}
+                                <li class="list-group-item {% if selected.choice.is_correct %}list-group-item-success{% else %}list-group-item-danger{% endif %}">
+                                    {{ selected.choice.text }}
+                                    {% if selected.choice.is_correct %}
+                                    <i class="fas fa-check text-success ms-2"></i>
+                                    {% else %}
+                                    <i class="fas fa-times text-danger ms-2"></i>
+                                    {% endif %}
+                                </li>
+                                {% empty %}
+                                <li class="list-group-item">Нет выбранных вариантов</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        
+                        {% if answer.question.question_type == 'multiple' %}
+                        <div>
+                            <h6>Правильные ответы:</h6>
+                            <ul class="list-group">
+                                {% for choice in answer.question.choices.all %}
+                                {% if choice.is_correct %}
+                                <li class="list-group-item list-group-item-success">
+                                    {{ choice.text }}
+                                    <i class="fas fa-check text-success ms-2"></i>
+                                </li>
+                                {% endif %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+                
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="{% url 'test_detail' test.pk %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Назад к тесту
+                    </a>
+                    <a href="{% url 'student_attempts' %}" class="btn btn-primary">
+                        <i class="fas fa-history me-2"></i>Все мои попытки
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

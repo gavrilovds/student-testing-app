@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Профиль | Система онлайн тестирования{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card shadow mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-user me-2"></i>Информация о пользователе</h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <i class="fas fa-user-circle fa-5x text-primary mb-3"></i>
+                    <h4>{{ user.get_full_name }}</h4>
+                    <p class="text-muted">@{{ user.username }}</p>
+                    <span class="badge bg-{% if profile.is_teacher %}success{% else %}info{% endif %}">
+                        {{ profile.get_user_type_display }}
+                    </span>
+                </div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-envelope me-2"></i>Email:</span>
+                        <span>{{ user.email }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-calendar me-2"></i>Дата регистрации:</span>
+                        <span>{{ user.date_joined|date:"d.m.Y" }}</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-edit me-2"></i>Редактировать профиль</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    {{ form|crispy }}
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Сохранить изменения
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        {% if profile.is_student %}
+        <div class="card shadow mt-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-clipboard-list me-2"></i>Статистика тестирования</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <div class="p-3">
+                            <h3>{{ user.test_attempts.count }}</h3>
+                            <p class="text-muted">Всего попыток</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3">
+                            <h3>{% with completed_tests=user.test_attempts.all|dictsortreversed:"completed_at" %}{{ completed_tests|length }}{% endwith %}</h3>
+                            <p class="text-muted">Завершенных тестов</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3">
+                            <a href="{% url 'student_attempts' %}" class="btn btn-outline-primary">
+                                <i class="fas fa-history me-2"></i>История тестов
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if profile.is_teacher %}
+        <div class="card shadow mt-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-chalkboard-teacher me-2"></i>Управление тестами</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <div class="p-3">
+                            <h3>{{ user.created_tests.count }}</h3>
+                            <p class="text-muted">Созданных тестов</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3">
+                            <a href="{% url 'test_create' %}" class="btn btn-outline-success">
+                                <i class="fas fa-plus me-2"></i>Создать тест
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3">
+                            <a href="{% url 'teacher_results' %}" class="btn btn-outline-primary">
+                                <i class="fas fa-chart-bar me-2"></i>Результаты
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ test.title }} | Система онлайн тестирования{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow mb-4">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-clipboard-list me-2"></i>{{ test.title }}</h4>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <h5 class="text-muted">Дисциплина: {{ test.subject.name }}</h5>
+                    <p>{{ test.description }}</p>
+                </div>
+                
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h3 class="mb-0">{{ test.time_limit }}</h3>
+                                <p class="text-muted mb-0">минут</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h3 class="mb-0">{{ test.questions.count }}</h3>
+                                <p class="text-muted mb-0">вопросов</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h3 class="mb-0">{{ attempts.count }}</h3>
+                                <p class="text-muted mb-0">ваших попыток</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if active_attempt %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Внимание!</strong> У вас есть незавершенная попытка прохождения этого теста.
+                    <div class="mt-2">
+                        <a href="{% url 'take_test' active_attempt.pk %}" class="btn btn-warning">
+                            <i class="fas fa-play-circle me-2"></i>Продолжить тест
+                        </a>
+                    </div>
+                </div>
+                {% else %}
+                <div class="d-grid gap-2">
+                    <a href="{% url 'start_test' test.id %}" class="btn btn-success btn-lg">
+                        <i class="fas fa-play-circle me-2"></i>Начать тест
+                    </a>
+                </div>
+                {% endif %}
+                
+                <div class="mt-3">
+                    <a href="{% url 'test_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Назад к списку тестов
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card shadow mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Информация</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>Создан:</span>
+                        <span>{{ test.created_at|date:"d.m.Y" }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>Автор:</span>
+                        <span>{{ test.created_by.get_full_name|default:test.created_by.username }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>Ограничение времени:</span>
+                        <span>{{ test.time_limit }} минут</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        {% if attempts %}
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-history me-2"></i>Ваши попытки</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    {% for attempt in attempts %}
+                    <a href="{% url 'test_results' attempt.pk %}" class="list-group-item list-group-item-action">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">Попытка #{{ forloop.counter }}</h6>
+                                <small class="text-muted">{{ attempt.started_at|date:"d.m.Y H:i" }}</small>
+                            </div>
+                            {% if attempt.is_completed %}
+                            <div class="text-end">
+                                <span class="badge bg-success">{{ attempt.score_percentage|floatformat:1 }}%</span>
+                                <div><small>{{ attempt.score|floatformat:1 }}/{{ attempt.max_score|floatformat:1 }}</small></div>
+                            </div>
+                            {% else %}
+                            <span class="badge bg-warning text-dark">Не завершена</span>
+                            {% endif %}
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

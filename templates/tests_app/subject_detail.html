@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ subject.name }} | Система онлайн тестирования{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow mb-4">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-book me-2"></i>{{ subject.name }}</h4>
+            </div>
+            <div class="card-body">
+                <p>{{ subject.description }}</p>
+                
+                <div class="d-flex justify-content-between mt-3">
+                    <a href="{% url 'subject_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Назад к дисциплинам
+                    </a>
+                    {% if user.profile.is_teacher %}
+                    <a href="{% url 'test_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus-circle me-2"></i>Создать тест
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="card shadow">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-clipboard-list me-2"></i>Доступные тесты</h5>
+            </div>
+            <div class="card-body">
+                {% if tests %}
+                <div class="list-group">
+                    {% for test in tests %}
+                    <a href="{% url 'test_detail' test.pk %}" class="list-group-item list-group-item-action">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="mb-1">{{ test.title }}</h5>
+                                <p class="mb-1 text-muted">{{ test.description|truncatewords:20 }}</p>
+                                <small>
+                                    <i class="fas fa-clock me-1"></i>{{ test.time_limit }} мин.
+                                    <i class="fas fa-question-circle ms-3 me-1"></i>{{ test.questions.count }} вопр.
+                                </small>
+                            </div>
+                            <div>
+                                {% if user.profile.is_student %}
+                                <span class="badge bg-primary rounded-pill">
+                                    <i class="fas fa-play me-1"></i>Пройти
+                                </span>
+                                {% else %}
+                                <span class="badge bg-info rounded-pill">
+                                    <i class="fas fa-edit me-1"></i>Управление
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    {% if user.profile.is_teacher %}
+                    <p>Для этой дисциплины пока нет созданных тестов. Нажмите кнопку "Создать тест", чтобы добавить новый.</p>
+                    {% else %}
+                    <p>Для этой дисциплины пока нет доступных тестов.</p>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card shadow mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Информация</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>Количество тестов:</span>
+                        <span class="badge bg-primary rounded-pill">{{ tests.count }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>Активных тестов:</span>
+                        <span class="badge bg-success rounded-pill">{% with active_tests=tests|dictsort:"is_active" %}{{ active_tests|length }}{% endwith %}</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        {% if user.profile.is_student %}
+        <div class="card shadow">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="fas fa-history me-2"></i>Ваш прогресс</h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <h3>{% with completed_tests=user.test_attempts.all|dictsort:"completed_at" %}{{ completed_tests|length }}{% endwith %}</h3>
+                    <p class="text-muted">завершенных тестов</p>
+                </div>
+                
+                <a href="{% url 'student_attempts' %}" class="btn btn-outline-primary d-block">
+                    <i class="fas fa-chart-bar me-2"></i>Мои результаты
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

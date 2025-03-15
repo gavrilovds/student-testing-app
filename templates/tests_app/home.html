@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+
+{% block title %}Главная | Система онлайн тестирования{% endblock %}
+
+{% block content %}
+<div class="jumbotron bg-light p-5 rounded">
+    <h1 class="display-4">Добро пожаловать в систему онлайн тестирования!</h1>
+    <p class="lead">Платформа для создания и прохождения тестов по различным дисциплинам.</p>
+    <hr class="my-4">
+    {% if user.is_authenticated %}
+        {% if user.profile.is_teacher %}
+        <p>Вы вошли как преподаватель. Вы можете создавать тесты и просматривать результаты студентов.</p>
+        <div class="d-flex gap-2">
+            <a class="btn btn-primary btn-lg" href="{% url 'test_create' %}">
+                <i class="fas fa-plus-circle me-2"></i>Создать тест
+            </a>
+            <a class="btn btn-success btn-lg" href="{% url 'teacher_results' %}">
+                <i class="fas fa-chart-bar me-2"></i>Результаты
+            </a>
+        </div>
+        {% else %}
+        <p>Вы вошли как студент. Выберите дисциплину или тест для прохождения.</p>
+        <div class="d-flex gap-2">
+            <a class="btn btn-primary btn-lg" href="{% url 'subject_list' %}">
+                <i class="fas fa-book me-2"></i>Дисциплины
+            </a>
+            <a class="btn btn-success btn-lg" href="{% url 'test_list' %}">
+                <i class="fas fa-clipboard-list me-2"></i>Доступные тесты
+            </a>
+        </div>
+        {% endif %}
+    {% else %}
+    <p>Для доступа к системе необходимо войти или зарегистрироваться.</p>
+    <div class="d-flex gap-2">
+        <a class="btn btn-primary btn-lg" href="{% url 'login' %}">
+            <i class="fas fa-sign-in-alt me-2"></i>Войти
+        </a>
+        <a class="btn btn-success btn-lg" href="{% url 'register' %}">
+            <i class="fas fa-user-plus me-2"></i>Регистрация
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<div class="row mt-5">
+    <div class="col-md-4">
+        <div class="card shadow h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-graduation-cap fa-4x text-primary mb-3"></i>
+                <h3>Для студентов</h3>
+                <p>Проходите тесты по различным дисциплинам, получайте мгновенные результаты и отслеживайте свой прогресс.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-chalkboard-teacher fa-4x text-success mb-3"></i>
+                <h3>Для преподавателей</h3>
+                <p>Создавайте тесты с различными типами вопросов, анализируйте результаты и отслеживайте успеваемость студентов.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-cogs fa-4x text-info mb-3"></i>
+                <h3>Функциональность</h3>
+                <p>Различные типы вопросов, ограничение времени, автоматическая проверка и подробная статистика результатов.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if subjects %}
+<div class="mt-5">
+    <h2 class="mb-4">Доступные дисциплины</h2>
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+        {% for subject in subjects %}
+        <div class="col">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">{{ subject.name }}</h5>
+                    <p class="card-text">{{ subject.description|truncatewords:20 }}</p>
+                </div>
+                <div class="card-footer bg-transparent border-top-0">
+                    <a href="{% url 'subject_detail' subject.pk %}" class="btn btn-outline-primary">
+                        <i class="fas fa-info-circle me-2"></i>Подробнее
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% if tests %}
+<div class="mt-5">
+    <h2 class="mb-4">Популярные тесты</h2>
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+        {% for test in tests|slice:":6" %}
+        <div class="col">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">{{ test.title }}</h5>
+                    <h6 class="card-subtitle mb-2 text-muted">{{ test.subject.name }}</h6>
+                    <p class="card-text">{{ test.description|truncatewords:15 }}</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">
+                            <i class="fas fa-clock me-1"></i>{{ test.time_limit }} мин.
+                        </small>
+                        <small class="text-muted">
+                            <i class="fas fa-question-circle me-1"></i>{{ test.questions.count }} вопр.
+                        </small>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-top-0">
+                    <a href="{% url 'test_detail' test.pk %}" class="btn btn-outline-primary">
+                        <i class="fas fa-info-circle me-2"></i>Подробнее
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+{% endblock %} 
